@@ -209,11 +209,3 @@ enum ServiceControlAction: String, Sendable {
         }
     }
 }
-
-enum PanelSection: String, CaseIterable, Identifiable, Sendable {
-    case nodes
-    case topology
-
-    var id: String { rawValue }
-    var title: String { self == .nodes ? "节点" : "拓扑" }
-}

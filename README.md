@@ -16,8 +16,9 @@
 - 拓扑按跳数分层布局，悬浮节点时显示 IP、下一跳、路径延迟和邻居数
 - 服务、RPC 或 CLI 异常时改变菜单栏图标并展示原因
 - 通过系统授权弹窗启动、停止或重启 EasyTier LaunchDaemon
-- macOS 26+ 使用 Apple 原生 Liquid Glass 面板与按钮，旧系统回退到 Material
-- 使用透明无边框 `NSPanel` 承载单层玻璃，避免 `MenuBarExtra` 的双重宿主背景
+- 使用可展开的紧凑模块卡片组织服务、节点和拓扑信息
+- macOS 26+ 由 AppKit 原生 `NSGlassEffectView` 承载单层 Liquid Glass 窗口底座，旧系统回退到 popover Material
+- 使用全尺寸标题型 `NSPanel`，支持状态项高亮、失焦关闭、淡入淡出和内容自适应尺寸
 - 不读取配置文件，不展示或保存 EasyTier 网络密钥
 
 ## 系统要求

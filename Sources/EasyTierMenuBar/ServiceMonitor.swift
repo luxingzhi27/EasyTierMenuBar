@@ -15,11 +15,9 @@ final class ServiceMonitor: ObservableObject {
     @Published private(set) var topologyError: String?
     @Published private(set) var isRefreshing = false
     @Published private(set) var currentAction: ServiceControlAction?
-    @Published var selectedSection: PanelSection = .nodes {
-        didSet { panelLayoutRevision &+= 1 }
-    }
     @Published var hoveredTopologyNodeID: String?
-    @Published private(set) var panelLayoutRevision = 0
+    @Published var nodesExpanded = true
+    @Published var topologyExpanded = false
     @Published private(set) var launchAtLoginEnabled = false
     @Published private(set) var launchAtLoginRequiresApproval = false
     @Published private(set) var launchAtLoginError: String?
@@ -30,6 +28,7 @@ final class ServiceMonitor: ObservableObject {
     private var pollingTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var isPanelVisible = false
+    private var expansionAnimationDeadline = Date.distantPast
 
     var localPeer: Peer? { peers.first(where: \.isLocal) }
     var remotePeers: [Peer] { peers.filter { !$0.isLocal } }
@@ -145,10 +144,27 @@ final class ServiceMonitor: ObservableObject {
         perform(.restart)
     }
 
+    func toggleNodesExpansion() {
+        beginExpansionAnimation()
+        nodesExpanded.toggle()
+    }
+
+    func toggleTopologyExpansion() {
+        beginExpansionAnimation()
+        topologyExpanded.toggle()
+    }
+
+    var isExpansionAnimating: Bool {
+        Date() < expansionAnimationDeadline
+    }
+
+    private func beginExpansionAnimation() {
+        expansionAnimationDeadline = Date().addingTimeInterval(0.5)
+    }
+
     private func perform(_ action: ServiceControlAction) {
         guard currentAction == nil else { return }
         currentAction = action
-        panelLayoutRevision &+= 1
         errorMessage = nil
 
         Task { [weak self] in
@@ -166,7 +182,6 @@ final class ServiceMonitor: ObservableObject {
                 errorMessage = error.message
             }
             currentAction = nil
-            panelLayoutRevision &+= 1
         }
     }
 
@@ -189,7 +204,6 @@ final class ServiceMonitor: ObservableObject {
         }
 
         refreshLaunchAtLoginStatus()
-        panelLayoutRevision &+= 1
     }
 
     func openLoginItemsSettings() {
@@ -203,6 +217,12 @@ final class ServiceMonitor: ObservableObject {
 
         let service = EasyTierService(serviceLabel: serviceLabel, rpcPortal: rpcPortal)
         let snapshot = await service.snapshot()
+
+        while isExpansionAnimating {
+            let remaining = expansionAnimationDeadline.timeIntervalSinceNow
+            guard remaining > 0 else { break }
+            try? await Task.sleep(for: .seconds(remaining))
+        }
 
         pid = snapshot.pid
         peers = snapshot.peers
@@ -221,7 +241,6 @@ final class ServiceMonitor: ObservableObject {
         } else {
             health = .running
         }
-        panelLayoutRevision &+= 1
     }
 
     private func refreshLaunchAtLoginStatus() {
